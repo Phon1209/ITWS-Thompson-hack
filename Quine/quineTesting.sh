@@ -9,5 +9,5 @@ tcc isThisAQuine.c
 ./isThisAQuine.exe > output.txt
 
 diff output.txt isThisAQuine.c > diff.txt
-rm ./isThisAQuine.*
+rm ./isThisAQuine.exe
 rm ./generateQuineString.exe
