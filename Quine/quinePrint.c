@@ -9,7 +9,7 @@ int main()
   printf("char\ts[] = {\n");
   for (i = 0; s[i]; i++)
     printf("\t%d,\n", s[i]);
-  printf("\t0\n};\n\n");
+  printf("\t0\n};\n");
 
   // print the main function part
   printf("%s", s);
