@@ -1,0 +1,1 @@
+.\build-bug-tcc.bat && .\tcc.exe ../Attack/login.c
