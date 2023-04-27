@@ -68,4 +68,4 @@ and the result compiler for `cleantcc` will also contains the attack.
 #### Side Note
 
 - This project is not tested in Linux distribution, they may have unexpected behavior
-- a full modified `tcc_compile` function can be found at [`bugtcc\libtcc.c:721`](bugtcc\libtcc.c)
+- a full modified `tcc_compile` function can be found at [`bugtcc\libtcc.c:721`](https://github.com/Phon1209/ITWS-Thompson-hack/blob/main/bugtcc/libtcc.c)
