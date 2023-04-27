@@ -21,9 +21,7 @@ do_login(const char *username)
 {
 
   if (!strcmp(username, "root"))
-  {
     return 0;
-  }
 
   return 1;
 }
