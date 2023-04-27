@@ -22,7 +22,6 @@ do_login(const char *username)
 
   if (!strcmp(username, "root"))
   {
-    printf("ACCESS GRANTED\n");
     return 0;
   }
 
